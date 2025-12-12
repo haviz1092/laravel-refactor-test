@@ -49,4 +49,24 @@ class Handler extends ExceptionHandler
             //
         });
     }
+
+    public function render($request, Throwable $e)
+    {
+        $response = [
+            'success' => false,
+            'message' => $e->getMessage(),
+        ];
+
+        $code = method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500;
+
+        if ($e instanceof ValidationException) {
+            $errors = collect($e->errors())
+                ->flatten()
+                ->toArray();
+
+            $response['data'] = $errors;
+        }
+
+        return ApiFormatter::error($response['message'], $code, $response['data'] ?? null);
+    }
 }

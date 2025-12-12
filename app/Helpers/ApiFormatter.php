@@ -10,6 +10,12 @@ class ApiFormatter
     'data'    => null,
   ];
 
+  protected static $errResponse = [
+    'success' => false,
+    'message' => null,
+    'errors'   => null,
+  ];
+
   public static function success($data = null, $message = null, $code = 200)
   {
     self::$response['success'] = true;
@@ -19,12 +25,12 @@ class ApiFormatter
     return response()->json(self::$response, $code);
   }
 
-  public static function error($message = null, $code = 400, $data = null)
+  public static function error($message = null, $code = 500, $errors = null)
   {
-    self::$response['success'] = false;
-    self::$response['message'] = $message;
-    self::$response['data']    = $data;
+    self::$errResponse['success'] = false;
+    self::$errResponse['message'] = $message;
+    self::$errResponse['errors']  = $errors;
 
-    return response()->json(self::$response, $code);
+    return response()->json(self::$errResponse, $code);
   }
 }

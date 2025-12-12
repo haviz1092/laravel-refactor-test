@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Services\OrderService;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\CreateOrderRequest;
+use Spatie\FlareClient\Api;
 
 class OrderController extends Controller
 {
@@ -72,6 +73,17 @@ class OrderController extends Controller
     {
         $results = $this->orderService->createOrder($request->validated());
 
-        return $results;
+        if($results['success']) {
+            return ApiFormatter::success(
+                $results['data'],
+                'Order created successfully',
+                $results['code']
+            );
+        } else {
+            return ApiFormatter::error(
+                $results['data'],
+                $results['code']
+            );
+        }
     }
 }
