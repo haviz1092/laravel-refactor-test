@@ -2,7 +2,73 @@
 
 namespace App\Services;
 
+use App\Helpers\ApiFormatter;
+use App\Models\Order;
+use App\Models\Product;
+use App\Models\OrderItem;
+use Illuminate\Support\Facades\DB;
+
 class OrderService
 {
-    // Your code ...
+    public function createOrder($data)
+    {
+        DB::beginTransaction();
+
+        try {
+            $userId = $data['user_id'];
+            $items = $data['items'];
+
+            $itemsToInsert = [];
+            $total = 0;
+
+            $products = Product::whereIn('id', collect($items)->pluck('product_id'))->get();
+
+            foreach ($items as $item) {
+                $product = $products->firstWhere('id', $item['product_id']);
+
+                if (!$product) {
+                    DB::rollBack();
+                    return ApiFormatter::error('Product not found', 404);
+                }
+
+                if ($product->stock <= 0) {
+                    DB::rollBack();
+                    return ApiFormatter::error('Product not found', 404);
+                }
+
+                $itemsToInsert[] = [
+                    'product_id' => $item['product_id'],
+                    'quantity'   => $item['quantity'],
+                    'price'      => $product['price'],
+                ];
+
+                $total += $product->price * $item['quantity'];
+            }
+
+            $order = Order::create([
+                'user_id' => $userId,
+                'total'   => $total,
+            ]);
+
+            $mappingItems = collect($itemsToInsert)->map(function ($item) use ($order) {
+                return [
+                    'order_id'   => $order->id,
+                    'product_id' => $item['product_id'],
+                    'quantity'   => $item['quantity'],
+                    'price'      => $item['price'],
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            });
+
+            OrderItem::insert($mappingItems->toArray());
+
+            DB::commit();
+
+            return ApiFormatter::success($order, 'Order created successfully', 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ApiFormatter::error($e->getMessage(), 500);
+        }
+    }
 }

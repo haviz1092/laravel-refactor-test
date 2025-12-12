@@ -2,11 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\ApiFormatter;
 use Illuminate\Http\Request;
+use App\Services\OrderService;
 use Illuminate\Support\Facades\DB;
+use App\Http\Requests\CreateOrderRequest;
 
 class OrderController extends Controller
 {
+    protected $orderService;
+
+    public function __construct(OrderService $orderService)
+    {
+        $this->orderService = $orderService;
+    }
+
     public function store(Request $request)
     {
         $userId = $request->input('user_id');
@@ -56,5 +66,12 @@ class OrderController extends Controller
             DB::rollBack();
             return response()->json(['error' => $e->getMessage()], 500);
         }
+    }
+
+    public function storeV2(CreateOrderRequest $request)
+    {
+        $results = $this->orderService->createOrder($request->validated());
+
+        return $results;
     }
 }
