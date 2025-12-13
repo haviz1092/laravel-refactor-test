@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\OrderItem;
 use Exception;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class OrderService
@@ -32,12 +33,12 @@ class OrderService
 
                 if (!$product) {
                     DB::rollBack();
-                    throw new Exception('Product not found', 404);
+                    throw new HttpException(404, 'Product not found');
                 }
 
                 if ($product->stock <= 0 || $product->stock < $item['quantity']) {
                     DB::rollBack();
-                    throw new Exception('Out of stock', 400);
+                    throw new HttpException(400, 'Out of stock');
                 }
 
                 $itemsToInsert[] = [
@@ -74,7 +75,7 @@ class OrderService
             return $order;
         } catch (Exception $e) {
             DB::rollBack();
-            throw new Exception($e->getMessage(), $e instanceof HttpException ? $e->getStatusCode() : 500);
+            throw $e;
         }
     }
 }

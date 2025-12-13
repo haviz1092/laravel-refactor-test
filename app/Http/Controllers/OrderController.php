@@ -71,19 +71,12 @@ class OrderController extends Controller
 
     public function storeV2(CreateOrderRequest $request)
     {
-        try {
-            $results = $this->orderService->createOrder($request->validated());
+        $results = $this->orderService->createOrder($request->validated());
 
-            return ApiFormatter::success(
-                $results,
-                'Order created successfully',
-                200
-            );
-        } catch (\Exception $e) {
-            return ApiFormatter::error(
-                $e->getMessage(),
-                $e->getCode()
-            );
-        }
+        return ApiFormatter::success(
+            $results,
+            'Order created successfully',
+            200
+        );
     }
 }

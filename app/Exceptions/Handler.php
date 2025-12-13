@@ -5,6 +5,7 @@ namespace App\Exceptions;
 use Throwable;
 use App\Helpers\ApiFormatter;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 
 class Handler extends ExceptionHandler
@@ -57,7 +58,10 @@ class Handler extends ExceptionHandler
             'message' => $e->getMessage(),
         ];
 
-        $code = method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500;
+        $code = $e instanceof HttpException
+            ? $e->getStatusCode()
+            : 500;
+
 
         if ($e instanceof ValidationException) {
             $errors = collect($e->errors())
