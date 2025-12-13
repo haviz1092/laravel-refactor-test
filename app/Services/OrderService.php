@@ -6,6 +6,7 @@ use App\Helpers\ApiFormatter;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\OrderItem;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -22,27 +23,21 @@ class OrderService
             $itemsToInsert = [];
             $total = 0;
 
-            $products = Product::whereIn('id', collect($items)->pluck('product_id'))->get();
+            $products = Product::whereIn(
+                'id', collect($items)->pluck('product_id')
+            )->lockForUpdate()->get()->keyBy('id');
 
             foreach ($items as $item) {
                 $product = $products->firstWhere('id', $item['product_id']);
 
                 if (!$product) {
                     DB::rollBack();
-                    return [
-                        'success' => false,
-                        'data'    => 'Product not found',
-                        'code'    => 404,
-                    ];
+                    throw new Exception('Product not found', 404);
                 }
 
-                if ($product->stock <= 0) {
+                if ($product->stock <= 0 && $product->stock < $item['quantity']) {
                     DB::rollBack();
-                    return [
-                        'success' => false,
-                        'data'    => 'Out of stock',
-                        'code'    => 400,
-                    ];
+                    throw new Exception('Out of stock', 400);
                 }
 
                 $itemsToInsert[] = [
@@ -52,6 +47,8 @@ class OrderService
                 ];
 
                 $total += $product->price * $item['quantity'];
+
+                $product->decrement('stock', $item['quantity']);
             }
 
             $order = Order::create([
@@ -74,19 +71,10 @@ class OrderService
 
             DB::commit();
 
-            return [
-                'success' => true,
-                'data'    => $order,
-                'code'    => 200,
-            ];
-        } catch (\Exception $e) {
+            return $order;
+        } catch (Exception $e) {
             DB::rollBack();
-
-            return [
-                'success' => false,
-                'message' => $e->getMessage(),
-                'code'    => $e instanceof HttpException ? $e->getStatusCode() : 500,
-            ];
+            throw new Exception($e->getMessage(), $e instanceof HttpException ? $e->getStatusCode() : 500);
         }
     }
 }
