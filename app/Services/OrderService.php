@@ -35,7 +35,7 @@ class OrderService
                     throw new Exception('Product not found', 404);
                 }
 
-                if ($product->stock <= 0 && $product->stock < $item['quantity']) {
+                if ($product->stock <= 0 || $product->stock < $item['quantity']) {
                     DB::rollBack();
                     throw new Exception('Out of stock', 400);
                 }
