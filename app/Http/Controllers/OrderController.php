@@ -21,7 +21,7 @@ class OrderController extends Controller
     public function store(Request $request)
     {
         $userId = $request->input('user_id');
-        $items = $request->input('items'); // should be array of ['product_id' => int, 'quantity' => int]
+        $items = $request->input('items');
 
         if (!$userId || !$items) {
             return response()->json(['error' => 'Invalid input'], 400);

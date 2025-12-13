@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Helpers\ApiFormatter;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\OrderItem;
@@ -24,7 +23,8 @@ class OrderService
             $total = 0;
 
             $products = Product::whereIn(
-                'id', collect($items)->pluck('product_id')
+                'id',
+                collect($items)->pluck('product_id')
             )->lockForUpdate()->get()->keyBy('id');
 
             foreach ($items as $item) {
